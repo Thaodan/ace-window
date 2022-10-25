@@ -250,7 +250,7 @@ or
             (aw-ignored-p w))))
     (cl-case aw-scope
       (visible
-       (cl-mapcan #'window-list (visible-frame-list)))
+       (cl-mapcan #'window-list (aw--desktop-window-list)))
       (global
        (cl-mapcan #'window-list (frame-list)))
       (frame
@@ -258,6 +258,17 @@ or
       (t
        (error "Invalid `aw-scope': %S" aw-scope))))
    'aw-window<))
+
+(defun aw--desktop-window-list ()
+  (seq-filter
+   (if (fboundp 'x-window-property)
+       (lambda (frame)
+         (when-let ((outer (frame-parameter frame 'outer-window-id))
+                    (id (string-to-number outer)))
+           (= (x-window-property "_NET_WM_DESKTOP" nil "CARDINAL" id nil t)
+              (x-window-property "_NET_CURRENT_DESKTOP" nil "CARDINAL" 0 nil t))))
+     #'identity)
+   (visible-frame-list)))
 
 (defvar aw-overlays-back nil
   "Hold overlays for when `aw-background' is t.")
